@@ -1,0 +1,96 @@
+<!-- /.content-wrapper -->
+<footer class="main-footer" style="display:none;">
+    <div class="pull-right hidden-xs">
+        <b>Version</b> 2.4.0
+    </div>
+    <strong>Copyright &copy; 2014-2016 <a href="https://adminlte.io">Almsaeed Studio</a>.</strong> All rights
+    reserved.
+</footer>
+</div>
+</body>
+</html>
+<script src="https://cdn.bootcss.com/jquery/3.3.1/jquery.min.js"></script>
+<script src="https://cdn.bootcss.com/vue/2.5.17/vue.min.js"></script>
+<script type="text/x-template" id="item-menuTree">
+    <li class="treeview">
+        <a :data-href="!isFolder ? model.name : '#'" @click="toggle">
+            <i :class="model.icon ? model.icon : 'fa fa-circle-o'"></i> <span>{{model.title}}</span>
+            <template v-if="isFolder">
+      <span class="pull-right-container" v-if="open">
+              <i class="fa fa-caret-down"></i>
+            </span>
+                <span class="pull-right-container" v-else>
+              <i class="fa fa-caret-left"></i>
+            </span>
+            </template>
+        </a>
+        <ul class="treeview-menu" v-show="open" v-if="isFolder">
+            <item
+                    class="item"
+                    v-for="(model1, index1) in model.child"
+                    :key="index1"
+                    :model="model1">
+            </item>
+        </ul>
+    </li>
+</script>
+<script>
+    Vue.component('item', {
+        template: '#item-menuTree',
+        props: {
+            model: Object
+        },
+        computed: {
+            isFolder: function () {
+                return this.model.child &&
+                    this.model.child.length
+            }
+        },
+        methods: {
+            toggle: function () {
+                if (this.isFolder) {
+                    this.open = !this.open
+                }
+            }
+        },
+        data: function () {
+            return {
+                open: false
+            }
+        },
+    });
+    var app= new Vue({
+        el: '#app',
+        //数据
+        data: function() {
+            return {
+                menu_data:[
+                    {
+                        id:0,
+                        name:'系统设置',
+                        icon:'fa fa-wrench',
+                        url:'admin/index/index'
+                    }
+                ],
+                nav_status:true
+            }
+        },
+        methods: {
+            //这里写函数
+            nav_change:function () {
+                if ($('body').hasClass('sidebar-collapse')) {
+                    $('body').removeClass('sidebar-collapse');
+                } else {
+                    $('body').addClass('sidebar-collapse');
+                }
+            }
+        },
+        mounted: function() {
+            var _this = this;
+            _this.menu_data = JSON.parse('<{$menu_list}>');
+        },
+        created:function () {
+
+        }
+    })
+</script>

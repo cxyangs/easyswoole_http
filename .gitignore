@@ -1,0 +1,5 @@
+.idea/
+runtime/log/*
+runtime/temp/*
+runtime/template_c/*
+runtime/cache/*

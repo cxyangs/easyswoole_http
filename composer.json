@@ -1,0 +1,23 @@
+{
+  "name": "film_main",
+  "version": "0.0.1",
+  "dependencies": {
+    
+  },
+  "require": {
+    "php": ">=7.1.0",
+    "easyswoole/easyswoole": "3.x-dev",
+    "topthink/think-orm": "^1.2",
+    "smarty/smarty": "^3.1",
+    "easyswoole/mysqli": "^1.0"
+  },
+  "require-dev": {
+    "eaglewu/swoole-ide-helper": "dev-master"
+  },
+  "autoload": {
+    "psr-4": {
+      "App\\": "application/",
+      "Extend\\": "extend/"
+    }
+  }
+}

@@ -1,0 +1,190 @@
+<?php
+// +----------------------------------------------------------------------
+// | Szbsit [ Rapid development framework for Cross border Mall ]
+// +----------------------------------------------------------------------
+// | Copyright (c) 2017-2018 http://www.szbsit.com All rights reserved.
+// +----------------------------------------------------------------------
+// | Author: yang <502204678@qq.com>
+// +----------------------------------------------------------------------
+// | Common.php  Version 2018/11/11
+// +----------------------------------------------------------------------
+namespace App\Common\Controller;
+use EasySwoole\EasySwoole\Config;
+use EasySwoole\EasySwoole\SysConst;
+use Extend\Utility\Pool\MysqlObject;
+use EasySwoole\Component\Pool\PoolManager;
+use Extend\Utility\Pool\MysqlPool;
+use App\SysConst as Consts;
+use Extend\Utility\Cache;
+
+class Common extends \EasySwoole\Http\AbstractInterface\Controller
+{
+    use \App\Common\Traits\Request;
+    protected $view;
+    protected $runpath;
+    /**
+     * @Mark:控制器
+     */
+    protected $controller;
+    /**
+     * @Mark:方法名
+     */
+    protected $action;
+    /**
+     * @Mark:数据库连接对象
+     */
+    protected $db;
+    /**
+     * 模型对象
+     */
+    protected $model = null;
+    /**
+     * @Mark:redis缓存对象
+     */
+    protected $cache;
+
+    public function index()
+    {
+        $this->response()->write('this is Common/Common Controller');
+    }
+
+    public function __construct()
+    {
+        parent::__construct();
+    }
+
+    /**
+     * @Mark:自定义初始化
+     * @throws \Exception
+     * @Author: yang <502204678@qq.com>
+     * @Version 2018/11/14
+     */
+    public function _initialize()
+    {
+        $this->cache = Cache::getInstance();
+        $this->runpath = str_replace(Config::getInstance()->getConf(SysConst::HTTP_CONTROLLER_NAMESPACE),'',get_class($this));
+    }
+
+    /**
+     * @Mark:成功返回
+     * @param null $result
+     * @param null $msg
+     * @param int $status
+     * @param int $httpStatus
+     * @Author: yang <502204678@qq.com>
+     * @Version 2018/11/14
+     */
+    public function success($result=null,$msg=null,$status=Consts::DATA_SUCCESS,$httpStatus=Consts::NORMAL)
+    {
+        $this->writeJson($status,$result,$msg,$httpStatus);
+    }
+
+    /**
+     * @Mark:失败返回
+     * @param null $result
+     * @param null $msg
+     * @param int $status
+     * @param int $httpStatus
+     * @Author: yang <502204678@qq.com>
+     * @Version 2018/11/14
+     */
+    public function error($result=null,$msg=null,$status=Consts::DATA_NULL,$httpStatus=Consts::NORMAL)
+    {
+        $this->writeJson($status,$result,$msg,$httpStatus);
+    }
+
+    /**
+     * @Mark: 实例化smarty模板引擎
+     * @Author: yang <502204678@qq.com>
+     * @Version 2018/11/9
+     */
+    public function smarty()
+    {
+        $this->view = new \Smarty();
+        $this->view->setCompileDir(RUNTIME_PATH."templates_c".DS);      # 模板编译目录
+        $this->view->setCacheDir(RUNTIME_PATH."cache".DS);              # 模板缓存目录
+        $this->view->setTemplateDir(APP_PATH);    # 模板文件目录
+        $this->view->setCaching(false);
+        $this->view->setRightDelimiter('}>');
+        $this->view->setLeftDelimiter('<{');
+        $this->view->cache_lifetime  =  3600 * 24 * 15;
+    }
+
+    /**
+     * 输出模板到页面
+     * @param  string|null $template 模板文件
+     * @author : evalor <master@evalor.cn>
+     * @throws \Exception
+     * @throws \SmartyException
+     */
+    function fetch($template = null)
+    {
+        $path = explode('\\',$this->runpath);
+        $path[1] = 'View';
+        if ($template === null) {
+            $path[count($path)-1] = strtolower(end($path));
+            $path = implode(DS,$path);
+            $template = $path.DS.$this->getActionName().'.html';
+        } elseif (strpos('/',$template) === false) {
+            $template = $path.DS.$template.'.html';
+        }
+        $content = $this->view->fetch($template);
+        $this->response()->write($content);
+        $this->view->clearAllAssign();
+        $this->view->clearAllCache();
+    }
+
+    /**
+     * 添加模板变量
+     * @param array|string $tpl_var 变量名
+     * @param mixed        $value   变量值
+     * @param boolean      $nocache 不缓存变量
+     * @author : evalor <master@evalor.cn>
+     */
+    function assign($tpl_var, $value = null, $nocache = false)
+    {
+        $this->view->assign($tpl_var, $value, $nocache);
+    }
+
+    function onRequest(?string $action): ?bool
+    {
+        $this->action = $action;
+        $class = explode('\\',get_class($this));
+        $this->controller = end($class);
+        $db = PoolManager::getInstance()->getPool(MysqlPool::class)->getObj(Config::getInstance()->getConf('databases.POOL_TIME_OUT'));
+        if ($db) {
+            $this->db = $db;
+        } else {
+            //直接抛给异常处理，不往下
+            throw new \Exception('url :'.$this->request()->getUri()->getPath().' error,Mysql Pool is Empty');
+        }
+        $this->_initialize();
+        return parent::onRequest($action); // TODO: Change the autogenerated stub
+    }
+
+    protected function gc() {
+        $this->resetStatus();
+        $this->view=null;
+        $this->runpath = null;
+        $this->model= null;
+        //释放mysql数据库连接池对象
+        PoolManager::getInstance()->getPool(MysqlPool::class)->recycleObj($this->db);
+        parent::gc();
+    }
+
+    /**
+     * @Mark:获取mysql连接
+     * @return MysqlObject
+     * @Author: yang <502204678@qq.com>
+     * @Version 2018/11/15
+     */
+    protected function getDbConnection(): MysqlObject {
+        return $this->db;
+    }
+
+    public function onException(\Throwable $throwable): void
+    {
+        $this->writeJson(500,$throwable->getMessage(),null,500);
+    }
+    
+}
